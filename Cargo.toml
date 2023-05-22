@@ -1,0 +1,16 @@
+[package]
+name = "iw4m-log-server"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+base64 = "0.21.1"
+clap = { version = "4.3.0", features = [ "derive" ] }
+lazy_static = "1.4.0"
+rand = "0.8.5"
+regex = "1.8.1"
+rocket = "=0.5.0-rc.3"
+serde = "1.0.163"
+serde_json = "1.0.96"
