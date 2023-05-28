@@ -9,13 +9,14 @@ This allows IW4M to send the game logs over a REST-ful API. The original Python 
 - Download the executable for your OS from the [latest release](https://github.com/Stefanuk12/iw4m-log-server/releases/latest)
 - Simply run the executable
 
-View options to edit below:
 ```
+Allows IW4M Admin to retrieve server game logs
+
 Usage: iw4m-log-server.exe [OPTIONS]
 
 Options:
-  -H, --host <HOST>  [default: 0.0.0.0]
-  -p, --port <PORT>  [default: 1625]
+  -H, --host <HOST>  The host of the IW4M server [default: 0.0.0.0]
+  -p, --port <PORT>  Specify a custom port to bind to [default: 1625]
   -h, --help         Print help
   -V, --version      Print version
 ```

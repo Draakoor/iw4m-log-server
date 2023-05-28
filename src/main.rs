@@ -45,15 +45,15 @@ fn log(path: String, retrieval_key: String) -> (Status, (ContentType, String)) {
     (Status::Ok, (ContentType::JSON, serde_json::to_string(&response).unwrap()))
 }
 
-// CLI args
+/// Allows IW4M Admin to retrieve server game logs
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    // The host of the IW4M server
+    /// The host of the IW4M server
     #[arg(short = 'H', long, default_value = "0.0.0.0")]
     host: String,
 
-    // Specify a custom port to connect the server to
+    /// Specify a custom port to bind to
     #[arg(short, long, default_value = "1625")]
     port: u16
 }
