@@ -2,13 +2,15 @@
 #[macro_use] extern crate rocket;
 mod logreader;
 
+use std::sync::Mutex;
+
 use clap::Parser;
 use base64::{Engine as _, engine::general_purpose};
 use logreader::LogReader;
-use rocket::{http::{Status, ContentType}, serde::Serialize, State, fairing::AdHoc};
+use rocket::{http::{Status, ContentType}, serde::Serialize, State};
 
 // Main endpoint
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 struct LogResponse {
     success: bool,
     length: usize,
@@ -17,7 +19,7 @@ struct LogResponse {
 }
 
 #[get("/log/<path>/<retrieval_key>")]
-fn log(verbose: &State<bool>, path: String, retrieval_key: String) -> (Status, (ContentType, String)) {
+fn log(verbose: &State<bool>, reader: &State<Mutex<LogReader>>, path: String, retrieval_key: String) -> (Status, (ContentType, String)) {
     // Attempt to decode the base64 path
     let decoded_path = urlencoding::decode(&path)
         .expect("UTF-8")
@@ -39,8 +41,8 @@ fn log(verbose: &State<bool>, path: String, retrieval_key: String) -> (Status, (
     };
 
     // Attempt to read the log file
-    let mut reader = LogReader::default();
-    let log_info = reader.read_file(path, retrieval_key);
+    let mut reader = reader.lock().unwrap();
+    let log_info = reader.read_file(path, retrieval_key, **verbose);
 
     // Generate the response
     let content = log_info.content;
@@ -53,6 +55,7 @@ fn log(verbose: &State<bool>, path: String, retrieval_key: String) -> (Status, (
     };
 
     // Return
+    if **verbose { println!("iw4m-log-server: sent {:?}", response) };
     (Status::Ok, (ContentType::JSON, serde_json::to_string(&response).unwrap()))
 }
 
@@ -69,7 +72,7 @@ struct Args {
     port: u16,
 
     /// Show additional information when running
-    #[arg(short, long, default_value = "true")]
+    #[arg(short, long, default_value = "false")]
     verbose: bool
 }
 
@@ -79,6 +82,9 @@ async fn main() {
     // Parse the arguments
     let args = Args::parse();
 
+    // Create the log reader
+    let reader = Mutex::from(LogReader::default());
+
     // Run the API server
     let config = rocket::Config::figment()
         .merge(("port", args.port))
@@ -87,6 +93,7 @@ async fn main() {
     rocket::custom(config)
         .mount("/", routes![log])
         .manage(args.verbose)
+        .manage(reader)
         .launch()
         .await.unwrap();
 }
