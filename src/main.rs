@@ -5,7 +5,7 @@ mod logreader;
 use clap::Parser;
 use base64::{Engine as _, engine::general_purpose};
 use logreader::LogReader;
-use rocket::{http::{Status, ContentType}, serde::Serialize};
+use rocket::{http::{Status, ContentType}, serde::Serialize, State};
 
 // Main endpoint
 #[derive(Serialize)]
@@ -17,14 +17,22 @@ struct LogResponse {
 }
 
 #[get("/log/<path>/<retrieval_key>")]
-fn log(path: String, retrieval_key: String) -> (Status, (ContentType, String)) {
+fn log(verbose: &State<bool>, path: String, retrieval_key: String) -> (Status, (ContentType, String)) {
     // Attempt to decode the base64 path
     let path = match general_purpose::URL_SAFE_NO_PAD.decode(path) {
         Ok(path_buf) => match String::from_utf8(path_buf) {
             Ok(path) => path,
-            Err(_) => return (Status::BadRequest, (ContentType::Text, String::from("invalid characters within path")))
+            Err(_) => {
+                let msg = String::from("invalid characters within path");
+                if **verbose { println!("{}", msg) };
+                return (Status::BadRequest, (ContentType::Text, msg))
+            }
         },
-        Err(_) => return (Status::BadRequest, (ContentType::Text, String::from("unable to decode path")))
+        Err(_) => {
+            let msg = String::from("unable to decode path");
+            if **verbose { println!("{}", msg) };
+            return (Status::BadRequest, (ContentType::Text, msg))
+        }
     };
 
     // Attempt to read the log file
@@ -55,7 +63,11 @@ struct Args {
 
     /// Specify a custom port to bind to
     #[arg(short, long, default_value = "1625")]
-    port: u16
+    port: u16,
+
+    /// Show additional information when running
+    #[arg(short, long, default_value = "true")]
+    verbose: bool
 }
 
 // Main function
@@ -71,6 +83,7 @@ async fn main() {
 
     rocket::custom(config)
         .mount("/", routes![log])
+        .manage(args.verbose)
         .launch()
         .await.unwrap();
 }
